@@ -21,6 +21,19 @@ async function run() {
         const productCollection = client
             .db("jantrik-app")
             .collection("product");
+        app.get("/products", async (req, res) => {
+            const query = {};
+            const cursor = productCollection.find(query);
+            const products = await cursor.toArray();
+            res.send(products);
+        });
+        app.post("/login", async (req, res) => {
+            const user = req.body;
+            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN, {
+                expiresIn: "1d",
+            });
+            res.send({ accessToken });
+        });
     } finally {
     }
 }
