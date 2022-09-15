@@ -21,6 +21,7 @@ async function run() {
         const productCollection = client
             .db("jantrik-app")
             .collection("product");
+        const reviewCollection = client.db("jantrik-app").collection("review");
 
         app.post("/login", async (req, res) => {
             const user = req.body;
@@ -34,6 +35,12 @@ async function run() {
             const cursor = productCollection.find(query);
             const products = await cursor.toArray();
             res.send(products);
+        });
+        app.get("/reviews", async (req, res) => {
+            const query = {};
+            const cursor = reviewCollection.find(query);
+            const reviews = await cursor.toArray();
+            res.send(reviews);
         });
     } finally {
     }
