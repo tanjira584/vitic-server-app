@@ -4,6 +4,8 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
 const app = express();
+const Stripe = require("stripe");
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 
 app.use(cors());
 app.use(express.json());
@@ -24,6 +26,9 @@ async function run() {
         const reviewCollection = client.db("jantrik-app").collection("review");
         const userCollection = client.db("jantrik-app").collection("user");
         const orderCollection = client.db("jantrik-app").collection("order");
+        const paymentCollection = client
+            .db("jantrik-app")
+            .collection("payment");
 
         /*-------Verify Admin-------*/
         async function verifyAdmin(req, res, next) {
@@ -35,6 +40,19 @@ async function run() {
                 res.status(403).send({ message: "Forbidden Access" });
             }
         }
+        /*--------Get Client Secret Key-----*/
+        app.post("/client-payment-intent", verifyJwt, async (req, res) => {
+            const service = req.body;
+            const price = service.price;
+            const amount = price * 100;
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ["card"],
+            });
+            res.send({ clientSecret: paymentIntent.client_secret });
+        });
         app.post("/login", async (req, res) => {
             const user = req.body;
             const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN, {
@@ -91,10 +109,33 @@ async function run() {
             const orders = await orderCollection.find(query).toArray();
             res.send(orders);
         });
+        /*------Single Order Get Controller----*/
+        app.get("/order/:id", async (req, res) => {
+            const id = req.params.id;
+
+            const query = { _id: ObjectId(id) };
+            const result = await orderCollection.findOne(query);
+            res.send(result);
+        });
         /*-----------Order Post Controller------------*/
         app.post("/orders", async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
+            res.send(result);
+        });
+        /*------Single Order Update Controller-----*/
+        app.patch("/order/:id", verifyJwt, async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+
+            const filter = { _id: ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    ...payment,
+                },
+            };
+            const paid = await paymentCollection.insertOne(payment);
+            const result = await orderCollection.updateOne(filter, updateDoc);
             res.send(result);
         });
         /*---------Order Delete Controller-----*/
