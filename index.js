@@ -83,10 +83,26 @@ async function run() {
             );
             res.send({ result, accessToken });
         });
+        /*---------Order Get <Controller-----------*/
+        app.get("/orders", verifyJwt, async (req, res) => {
+            const email = req.decoded.email;
+
+            const query = { email: email };
+            const orders = await orderCollection.find(query).toArray();
+            res.send(orders);
+        });
         /*-----------Order Post Controller------------*/
         app.post("/orders", async (req, res) => {
             const order = req.body;
             const result = await orderCollection.insertOne(order);
+            res.send(result);
+        });
+        /*---------Order Delete Controller-----*/
+        app.delete("/order/:id", verifyJwt, async (req, res) => {
+            const id = req.params.id;
+
+            const query = { _id: ObjectId(id) };
+            const result = await orderCollection.deleteOne(query);
             res.send(result);
         });
     } finally {
