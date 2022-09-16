@@ -104,7 +104,6 @@ async function run() {
         /*---------Order Get <Controller-----------*/
         app.get("/orders", verifyJwt, async (req, res) => {
             const email = req.decoded.email;
-
             const query = { email: email };
             const orders = await orderCollection.find(query).toArray();
             res.send(orders);
@@ -127,7 +126,7 @@ async function run() {
         app.patch("/order/:id", verifyJwt, async (req, res) => {
             const id = req.params.id;
             const payment = req.body;
-
+            console.log(payment);
             const filter = { _id: ObjectId(id) };
             const updateDoc = {
                 $set: {
@@ -146,6 +145,49 @@ async function run() {
             const result = await orderCollection.deleteOne(query);
             res.send(result);
         });
+        /*-------All Review Get Controoler----*/
+        app.get("/reviews", async (req, res) => {
+            const result = await (
+                await reviewCollection.find().toArray()
+            ).reverse();
+
+            res.send(result);
+        });
+        /*-----Single Review Post Controller-----*/
+        app.post("/reviews", verifyJwt, async (req, res) => {
+            const review = req.body;
+            const result = await reviewCollection.insertOne(review);
+            res.send(review);
+        });
+        /*---------------User Get Controller-------------*/
+        app.get("/user", verifyJwt, async (req, res) => {
+            const email = req.decoded.email;
+            const query = { email: email };
+            const result = await userCollection.findOne(query);
+            res.send(result);
+        });
+        /*-----------Single User Patch Controller-------*/
+        app.patch(
+            "/user/:email",
+            verifyJwt,
+
+            async (req, res) => {
+                const email = req.params.email;
+                const user = req.body;
+                const filter = { email: email };
+                const updateDoc = {
+                    $set: {
+                        ...user,
+                    },
+                };
+
+                const result = await userCollection.updateOne(
+                    filter,
+                    updateDoc
+                );
+                res.send(result);
+            }
+        );
     } finally {
     }
 }
