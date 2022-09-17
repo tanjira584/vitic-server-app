@@ -33,8 +33,8 @@ async function run() {
         /*-------Verify Admin-------*/
         async function verifyAdmin(req, res, next) {
             const requester = req.decoded.email;
-            const user = userCollection.findOne({ email: requester });
-            if (user.role === admin) {
+            const user = await userCollection.findOne({ email: requester });
+            if (user.role === "admin") {
                 next();
             } else {
                 res.status(403).send({ message: "Forbidden Access" });
@@ -60,11 +60,41 @@ async function run() {
             });
             res.send({ accessToken });
         });
+        /*-----All Products Get Controller-------*/
         app.get("/products", async (req, res) => {
             const query = {};
             const cursor = productCollection.find(query);
             const products = await cursor.toArray();
             res.send(products);
+        });
+        /*-----Single Product Post Controller-------*/
+        app.post("/products", verifyJwt, verifyAdmin, async (req, res) => {
+            const product = req.body;
+            const result = await productCollection.insertOne(product);
+            res.send(result);
+        });
+        /*--------Single Product PATCH Controller------*/
+        app.patch("/product/:id", verifyJwt, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const newStock = req.body.stock;
+            const prod = await productCollection.findOne({ _id: ObjectId(id) });
+            const updateDoc = {
+                $set: {
+                    ...prod,
+                    stock: newStock,
+                },
+            };
+            const result = await productCollection.updateOne(filter, updateDoc);
+
+            res.send(result);
+        });
+        /*---------Product Delete Controller------*/
+        app.delete("/product/:id", verifyJwt, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await productCollection.deleteOne(query);
+            res.send(result);
         });
         app.get("/reviews", async (req, res) => {
             const query = {};
@@ -188,6 +218,15 @@ async function run() {
                 res.send(result);
             }
         );
+        /*---------Get The Admin User ------*/
+        app.get("/admin/:email", async (req, res) => {
+            const email = req.params.email;
+
+            const user = await userCollection.findOne({ email: email });
+            const isAdmin = user?.role === "admin";
+
+            res.send({ admin: isAdmin });
+        });
     } finally {
     }
 }
