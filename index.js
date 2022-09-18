@@ -131,6 +131,12 @@ async function run() {
             );
             res.send({ result, accessToken });
         });
+        /*-------All Order Get Controller----*/
+        app.get("/orders/admin", verifyJwt, verifyAdmin, async (req, res) => {
+            const query = {};
+            const orders = await orderCollection.find(query).toArray();
+            res.send(orders);
+        });
         /*---------Order Get <Controller-----------*/
         app.get("/orders", verifyJwt, async (req, res) => {
             const email = req.decoded.email;
@@ -156,7 +162,7 @@ async function run() {
         app.patch("/order/:id", verifyJwt, async (req, res) => {
             const id = req.params.id;
             const payment = req.body;
-            console.log(payment);
+
             const filter = { _id: ObjectId(id) };
             const updateDoc = {
                 $set: {
@@ -189,17 +195,53 @@ async function run() {
             const result = await reviewCollection.insertOne(review);
             res.send(review);
         });
-        /*---------------User Get Controller-------------*/
+        /*------All User Get Controller-----*/
+        app.get("/users", verifyJwt, verifyAdmin, async (req, res) => {
+            const query = {};
+            const result = await userCollection.find(query).toArray();
+            res.send(result);
+        });
+        /*---------------Single Auth User Get Controller-------------*/
         app.get("/user", verifyJwt, async (req, res) => {
             const email = req.decoded.email;
             const query = { email: email };
             const result = await userCollection.findOne(query);
             res.send(result);
         });
+        /*---------User Delete Controller------*/
+        app.delete("/user/:id", verifyJwt, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await userCollection.deleteOne(query);
+            res.send(result);
+        });
         /*-----------Single User Patch Controller-------*/
         app.patch(
             "/user/:email",
             verifyJwt,
+
+            async (req, res) => {
+                const email = req.params.email;
+                const user = req.body;
+                const filter = { email: email };
+                const updateDoc = {
+                    $set: {
+                        ...user,
+                    },
+                };
+
+                const result = await userCollection.updateOne(
+                    filter,
+                    updateDoc
+                );
+                res.send(result);
+            }
+        );
+        /*-----------Single User Patch Controller-------*/
+        app.patch(
+            "/user/admin/:email",
+            verifyJwt,
+            verifyAdmin,
 
             async (req, res) => {
                 const email = req.params.email;
